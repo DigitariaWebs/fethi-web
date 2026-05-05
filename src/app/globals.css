@@ -1,26 +1,207 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
+/* -----------------------------------------------------------------------------
+   THEME TOKENS
+   Surfaces (paper / surface / ink) and the warm neutral scale (n-50..n-800)
+   live as CSS variables so the whole site can flip between light and dark.
+   Brand tokens (primary / accent / status colors) stay static — they sit on
+   whichever surface you're currently on.
+   --------------------------------------------------------------------------- */
+@layer base {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    color-scheme: light;
+
+    --color-paper: 251 248 244;       /* #FBF8F4 warm cream */
+    --color-surface: 255 255 255;     /* #FFFFFF */
+    --color-ink: 31 36 33;            /* #1F2421 warm dark */
+
+    --color-n-50: 245 241 235;
+    --color-n-100: 236 230 221;
+    --color-n-200: 221 213 200;
+    --color-n-300: 194 183 164;
+    --color-n-400: 156 144 124;
+    --color-n-500: 118 105 90;
+    --color-n-600: 87 78 66;
+    --color-n-700: 59 52 44;
+    --color-n-800: 39 35 32;
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    /* Warm dark — wet bricks at night, never cold black */
+    --color-paper: 24 21 18;          /* deep warm earth */
+    --color-surface: 33 28 24;        /* slightly raised */
+    --color-ink: 245 241 235;         /* paper-cream text */
+
+    /* Neutrals invert smoothly: n-50 (light bg tint) → darkest, n-800 → lightest */
+    --color-n-50: 39 35 32;
+    --color-n-100: 49 43 38;
+    --color-n-200: 67 58 50;
+    --color-n-300: 99 87 75;
+    --color-n-400: 156 144 124;       /* mid-grey, mostly stable */
+    --color-n-500: 194 183 164;
+    --color-n-600: 221 213 200;
+    --color-n-700: 236 230 221;
+    --color-n-800: 245 241 235;
+  }
+
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-paper text-ink font-sans;
+    font-feature-settings: "ss01", "ss02", "cv11";
+  }
+
+  ::selection {
+    background: rgba(200, 85, 61, 0.22);
+    color: #5C2419;
+  }
+  .dark ::selection {
+    background: rgba(200, 85, 61, 0.45);
+    color: #FBE9E2;
+  }
+
+  :focus-visible {
+    outline: 2px solid #2F6B5E;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  hr {
+    border-color: rgb(var(--color-ink) / 0.08);
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer components {
+  .container-marketing {
+    @apply mx-auto w-full max-w-[1200px] px-5 sm:px-6 lg:px-8;
+  }
+  .container-admin {
+    @apply mx-auto w-full max-w-[1440px] px-6;
+  }
+
+  .surface-glass {
+    background: linear-gradient(
+      180deg,
+      rgba(255, 255, 255, 0.72) 0%,
+      rgba(255, 255, 255, 0.55) 100%
+    );
+    backdrop-filter: saturate(180%) blur(18px);
+    -webkit-backdrop-filter: saturate(180%) blur(18px);
+    box-shadow:
+      0 24px 48px -16px rgba(92, 36, 25, 0.12),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    border: 1px solid rgba(255, 255, 255, 0.6);
+  }
+
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .mask-fade-y {
+    -webkit-mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+            mask-image: linear-gradient(180deg, transparent 0, #000 8%, #000 92%, transparent 100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   "COFFEE IN MILK" THEME TRANSITION
+   When the toggle fires, the destination theme is revealed through an
+   expanding radial-gradient mask centered on the click point.
+   - The mask's solid core is the new theme's full opacity
+   - A 6% feathered band at the edge produces the "live gradient" boundary
+   - As --r animates 0→170%, the feathered band sweeps across the viewport
+   --------------------------------------------------------------------------- */
+@property --r {
+  syntax: "<percentage>";
+  initial-value: 0%;
+  inherits: false;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+::view-transition-old(root) {
+  z-index: 1;
+}
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+::view-transition-new(root) {
+  animation: coffee-pour 820ms cubic-bezier(0.66, 0, 0.34, 1) both;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--click-x, 50%) var(--click-y, 50%),
+    rgb(0 0 0) 0%,
+    rgb(0 0 0) calc(var(--r) - 6%),
+    rgb(0 0 0 / 0) var(--r)
+  );
+  mask-image: radial-gradient(
+    circle at var(--click-x, 50%) var(--click-y, 50%),
+    rgb(0 0 0) 0%,
+    rgb(0 0 0) calc(var(--r) - 6%),
+    rgb(0 0 0 / 0) var(--r)
+  );
+}
+
+@keyframes coffee-pour {
+  from { --r: 0%; }
+  to { --r: 170%; }
+}
+
+/* Going light → dark, the OLD frame holds its ground while NEW pours over it.
+   Going dark → light, NEW (the cream) pours into the coffee just the same. */
+
+/* Reduced-motion: skip the animation entirely. */
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-new(root),
+  ::view-transition-old(root) {
+    animation: none !important;
+    -webkit-mask-image: none !important;
+    mask-image: none !important;
+  }
+}
+
+/* -----------------------------------------------------------------------------
+   Manual overlay fallback for browsers without View Transitions API
+   (Firefox, Safari < 18). The ThemeProvider injects a fixed div with this
+   class; it pours the destination color from the click point.
+   --------------------------------------------------------------------------- */
+.theme-pour-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(
+    circle at var(--click-x, 50%) var(--click-y, 50%),
+    rgb(0 0 0) 0%,
+    rgb(0 0 0) calc(var(--r) - 6%),
+    rgb(0 0 0 / 0) var(--r)
+  );
+  mask-image: radial-gradient(
+    circle at var(--click-x, 50%) var(--click-y, 50%),
+    rgb(0 0 0) 0%,
+    rgb(0 0 0) calc(var(--r) - 6%),
+    rgb(0 0 0 / 0) var(--r)
+  );
+  animation: coffee-pour 820ms cubic-bezier(0.66, 0, 0.34, 1) both;
 }
